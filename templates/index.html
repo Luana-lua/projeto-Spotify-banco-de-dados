@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotify Stats Interface</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    #busca-genero {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid #333;
+  }
+
+  #resultadosGenero table {
+    margin-top: 1rem;
+  }
+
+  #selectGenero {
+    background-color: #1e1e1e;
+    color: white;
+    border: 1px solid #333;
+  }
+
+  #selectGenero:focus {
+    border-color: #1DB954;
+    box-shadow: 0 0 0 0.2rem rgba(29, 185, 84, 0.25);
+  }
+    body { background-color: #121212; color: white; }
+    .nav-link, .btn { color: white; }
+    .section-title { margin-top: 2rem; }
+    table { color: white; }
+    .list-group-item { cursor: pointer; }
+    .list-group-item:hover { background-color: #333 !important; }
+    .resultado-musica, .resultado-artista { 
+      margin-bottom: 1rem; 
+      padding: 1rem; 
+      border-radius: 5px; 
+      background-color: #1e1e1e; 
+    }
+    .resultado-container {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">🎵 Spotify Stats</a>
+      <div class="collapse navbar-collapse">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="#busca-musica">Buscar Música</a></li>
+          <li class="nav-item"><a class="nav-link" href="#busca-artista">Buscar Artista</a></li>
+          <li class="nav-item"><a class="nav-link" href="#ranking">Ranking</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Buscar Músicas -->
+    <section id="busca-musica" class="section-title">
+      <h2>🔎 Buscar Músicas</h2>
+      <div class="mb-3">
+        <input id="buscaInputMusica" class="form-control" type="text" placeholder="Digite o nome da música...">
+      </div>
+      <div class="d-flex gap-2 mb-3">
+        <button class="btn btn-primary" onclick="buscarMusica()">Buscar Música</button>
+      </div>
+      <div id="resultadosMusicas" class="resultado-container"></div>
+    </section>
+
+    <!-- Buscar Artistas -->
+    <section id="busca-artista" class="section-title">
+      <h2>🔎 Buscar Artistas</h2>
+      <div class="mb-3">
+        <input id="buscaInputArtista" class="form-control" type="text" placeholder="Digite o nome do artista...">
+      </div>
+      <div class="d-flex gap-2 mb-3">
+        <button class="btn btn-success" onclick="buscarArtista()">Buscar Artista</button>
+      </div>
+      <div id="resultadosArtistas" class="resultado-container"></div>
+    </section>
+
+    <!-- Buscar por Gênero -->
+    <section id="busca-genero" class="section-title">
+      <h2>🎵 Buscar por Gênero</h2>
+  
+      <!-- Filtros fixos -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <select id="selectGenero" class="form-select">
+            <option value="" selected>Todos os gêneros</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <select id="selectOrdenar" class="form-select">
+            <option value="">Ordenar por...</option>
+            <option value="Danceability">Danceability</option>
+            <option value="Valence">Valence</option>
+            <option value="Energy">Energy</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Resultados abaixo -->
+      <div id="resultadosGenero" class="resultado-container"></div>
+    </section>
+
+    <!-- Ranking e Estatísticas -->
+    <section id="ranking" class="section-title">
+      <h2>🏆 Top 10 Músicas por Streams</h2>
+      <table class="table table-dark table-striped">
+        <thead><tr><th>#</th><th>Nome</th><th>Streams</th></tr></thead>
+        <tbody id="rankingBody"></tbody>
+      </table>
+    </section>
+
+    <!-- Dados das Plataformas -->
+    <section id="plataformas" class="section-title">
+      <h2>📊 Dados por Plataforma</h2>
+      <table class="table table-dark table-bordered">
+        <thead><tr><th>Plataforma</th><th>Playlists Médias</th><th>Charts Médias</th></tr></thead>
+        <tbody id="plataformaBody"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    // Função para formatar a data no formato DD - MM - AAAA
+    function formatarData(dataString) {
+      if (!dataString) return 'Desconhecido';
+      
+      try {
+        const data = new Date(dataString);
+        if (isNaN(data.getTime())) return 'Desconhecido';
+        
+        const dia = String(data.getDate()).padStart(2, '0');
+        const mes = String(data.getMonth() + 1).padStart(2, '0'); // Mês começa em 0
+        const ano = data.getFullYear();
+        
+        return `${dia} - ${mes} - ${ano}`;
+      } catch (e) {
+        return 'Desconhecido';
+      }
+    }
+
+    async function buscarMusica() {
+      const query = document.getElementById("buscaInputMusica").value.trim();
+      if (!query) {
+        alert("Por favor, digite o nome de uma música");
+        return;
+      }
+      
+      try {
+        const response = await fetch('/buscar-musica', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome: query })
+        });
+        
+        const musicas = await response.json();
+        const container = document.getElementById("resultadosMusicas");
+        container.innerHTML = '';
+        
+        if (musicas.length === 0) {
+          container.innerHTML = '<div class="alert alert-warning">Nenhuma música encontrada</div>';
+          return;
+        }
+        
+        const table = document.createElement('table');
+        table.className = 'table table-dark table-striped';
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Lançamento</th>
+              <th>Streams</th>
+              <th>Danceability</th>
+              <th>Energy</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${musicas.map(musica => `
+              <tr>
+                <td>${musica.Nome}</td>
+                <td>${formatarData(musica.DataLancamento)}</td>
+                <td>${musica.Streams ? musica.Streams.toLocaleString() : 'N/A'}</td>
+                <td>${musica.Danceability || 'N/A'}</td>
+                <td>${musica.Energy || 'N/A'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        `;
+        container.appendChild(table);
+      } catch (error) {
+        console.error('Erro ao buscar música:', error);
+        document.getElementById("resultadosMusicas").innerHTML = 
+          '<div class="alert alert-danger">Erro ao buscar músicas</div>';
+      }
+    }
+
+    async function buscarArtista() {
+      const query = document.getElementById("buscaInputArtista").value.trim();
+      if (!query) {
+        alert("Por favor, digite o nome de um artista");
+        return;
+      }
+      
+      try {
+        const response = await fetch('/buscar-artista', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome: query })
+        });
+        
+        const musicas = await response.json();
+        const container = document.getElementById("resultadosArtistas");
+        container.innerHTML = '';
+        
+        if (musicas.length === 0) {
+          container.innerHTML = '<div class="alert alert-warning">Nenhum artista encontrado</div>';
+          return;
+        }
+        
+        const table = document.createElement('table');
+        table.className = 'table table-dark table-striped';
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Música</th>
+              <th>Lançamento</th>
+              <th>Streams</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${musicas.map(musica => `
+              <tr>
+                <td>${musica.Nome}</td>
+                <td>${formatarData(musica.DataLancamento)}</td>
+                <td>${musica.Streams ? musica.Streams.toLocaleString() : 'N/A'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        `;
+        container.appendChild(table);
+      } catch (error) {
+        console.error('Erro ao buscar artista:', error);
+        document.getElementById("resultadosArtistas").innerHTML = 
+          '<div class="alert alert-danger">Erro ao buscar artista</div>';
+      }
+    }
+
+    async function carregarRanking() {
+      try {
+        const res = await fetch('/top-musicas');
+        const html = await res.text();
+        
+        // Cria um elemento temporário para extrair os dados da tabela
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const rows = tempDiv.querySelectorAll('table tr');
+        
+        const tbody = document.getElementById("rankingBody");
+        tbody.innerHTML = '';
+        
+        // Pula a primeira linha (cabeçalho) e pega as 10 primeiras músicas
+        for (let i = 1; i < rows.length && i <= 10; i++) {
+          const cells = rows[i].querySelectorAll('td');
+          if (cells.length >= 2) {
+            const row = `<tr><td>${i}</td><td>${cells[0].textContent}</td><td>${parseInt(cells[1].textContent).toLocaleString()}</td></tr>`;
+            tbody.innerHTML += row;
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao carregar ranking:', error);
+      }
+    }
+
+    async function carregarDadosPlataformas() {
+      try {
+        const response = await fetch('/dados-plataformas');
+
+        if (!response.ok) {
+            throw new Error('Erro na resposta do servidor');
+        }
+
+        const plataformas = await response.json();
+        const tbody = document.getElementById("plataformaBody");
+        tbody.innerHTML = '';
+
+        if (plataformas.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3">Nenhum dado disponível</td></tr>';
+            return;
+        }
+
+        plataformas.forEach(plataforma => {
+            const row = document.createElement('tr');
+
+            // Garantir que os valores sejam números antes de formatar
+            const mediaPlaylists = typeof plataforma.Media_Playlists === 'number' 
+                ? plataforma.Media_Playlists.toFixed(2) 
+                : '0.00';
+                
+            const mediaCharts = typeof plataforma.Media_Charts === 'number' 
+                ? plataforma.Media_Charts.toFixed(2) 
+                : '0.00';
+            
+            row.innerHTML = `
+                <td>${plataforma.Plataforma || 'Desconhecido'}</td>
+                <td>${mediaPlaylists}</td>
+                <td>${mediaCharts}</td>
+            `;
+            tbody.appendChild(row);
+        });
+      } catch (error) {
+        console.error('Erro ao carregar dados das plataformas:', error);
+        const tbody = document.getElementById("plataformaBody");
+        tbody.innerHTML = '<tr><td colspan="3">Erro ao carregar dados</td></tr>';
+      }
+    }
+
+    async function carregarGeneros() {
+      try {
+        const response = await fetch('/generos');
+        const generos = await response.json();
+        const select = document.getElementById("selectGenero");
+        
+        // Limpa opções existentes (exceto a primeira)
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+        
+        // Adiciona novos gêneros
+        generos.forEach(genero => {
+            const option = document.createElement('option');
+            option.value = genero.ID;
+            option.textContent = genero.Nome;
+            select.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Erro ao carregar gêneros:', error);
+      }
+    }
+
+    async function filtrarMusicas() {
+  const generoId = document.getElementById("selectGenero").value || null;
+  const ordenarPor = document.getElementById("selectOrdenar").value || null;
+
+  try {
+    const response = await fetch('/filtrar-musicas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ genero_id: generoId, ordenar_por: ordenarPor })
+    });
+
+    const musicas = await response.json();
+    const container = document.getElementById("resultadosGenero");
+    container.innerHTML = '';
+
+    if (musicas.length === 0) {
+      container.innerHTML = '<div class="alert alert-info">Nenhuma música encontrada.</div>';
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'table table-dark table-striped';
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Música</th>
+          <th>Artista</th>
+          <th>Lançamento</th>
+          <th>Streams</th>
+          <th>Danceability</th>
+          <th>Valence</th>
+          <th>Energy</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${musicas.map(m => `
+          <tr>
+            <td>${m.Nome}</td>
+            <td>${m.Artista}</td>
+            <td>${formatarData(m.DataLancamento)}</td>
+            <td>${m.Streams ? m.Streams.toLocaleString() : 'N/A'}</td>
+            <td>${m.Danceability ?? 'N/A'}</td>
+            <td>${m.Valence ?? 'N/A'}</td>
+            <td>${m.Energy ?? 'N/A'}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    `;
+    container.appendChild(table);
+  } catch (error) {
+    console.error('Erro ao filtrar músicas:', error);
+    document.getElementById("resultadosGenero").innerHTML =
+      '<div class="alert alert-danger">Erro ao buscar músicas.</div>';
+  }
+}
+
+
+
+    window.onload = function() {
+      carregarRanking();
+      carregarDadosPlataformas();
+      carregarGeneros();
+      
+      // Adiciona evento de tecla para buscar ao pressionar Enter
+      document.getElementById("buscaInputMusica").addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') buscarMusica();
+      });
+      
+      document.getElementById("buscaInputArtista").addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') buscarArtista();
+      });
+
+      // Adiciona evento ao selecionar gênero
+      document.getElementById("selectGenero").addEventListener('change', filtrarMusicas);
+      document.getElementById("selectOrdenar").addEventListener('change', filtrarMusicas);
+    };
+  </script>
+</body>
+</html>
