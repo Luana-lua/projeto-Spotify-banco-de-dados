@@ -10,10 +10,10 @@ O SoundInsights é uma aplicação web que utiliza análise de dados para desven
 - Artistas e estudantes (entendimento prático de tendências).
 
 # ✨ Funcionalidades
-Busca por música ou artista (com atributos técnicos).
-Filtros por gênero e métricas (Danceability, Energy, Valence).
-Rankings: Top 10 músicas por streams.
-Análise de desempenho em plataformas.
+- Busca por música ou artista (com atributos técnicos).
+- Filtros por gênero e métricas (Danceability, Energy, Valence).
+- Rankings: Top 10 músicas por streams.
+- Análise de desempenho em plataformas.
 
 # 🛠️ Tecnologias
 - Backend: Python (Flask), SQL Server
@@ -36,7 +36,8 @@ Análise de desempenho em plataformas.
 2. insercao_spotify.sql
 
 # 🖥️ Instruções para Windows para rodar o projeto:
-#Clonar repositório
+````
+#Clonar repositório 
 git clone https://github.com/Luana-lua/projeto-Spotify-banco-de-dados.git
 
 #Navegar para o diretório do projeto
@@ -45,7 +46,7 @@ cd projeto-Spotify-banco-de-dados
 #Instalações de bibliotecas necessárias
 pip install python-dotenv Flask pyodbc
 
-#--Mostrar instalações para verificaçar(caso necessário)--
+#Mostrar instalações para verificacar(caso necessário)
 pip show flask
 pip show python-dotenv
 pip show Flask
@@ -56,7 +57,7 @@ python app.py
 
 #Acesse no navegador
 http://127.0.0.1:3000
-
+````
 
 # 📌 Links Úteis
 Vídeo de Apresentação: https://youtu.be/FeDLVA9Oa_8
